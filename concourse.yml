@@ -1,0 +1,79 @@
+---
+# Concourse pipeline: fabric-image
+#   $ fly -t target sp -p fabric-image -c concourse.yml -l fly-vars.yml -l ~/sec/credentials-prod.yml
+resources:
+- name: src-git
+  type: git
+  source:
+    uri: https://github.com/wdstar/fabric-image
+    branch: master
+- name: base-image
+  type: docker-image
+  source:
+    repository: alpine
+    tag: latest
+    registry_mirror: https://((registry-mirror-domain))
+      # e.g. https://registry.docker.example.com:5000
+    ca_certs:
+    - domain: ((registry-mirror-domain))
+      # e.g. registry.docker.example.com:5000
+      cert: ((docker-reg-ca-cert))
+  check_every: 1h
+- name: docker-reg
+  type: docker-image
+  source:
+    repository: ((docker-id))/((name))
+    #tag: latest
+    username: ((docker-id))
+    password: ((docker-pw))
+  check_every: 12h
+
+jobs:
+- name: build-img
+  plan:
+  - aggregate:
+    - get: src-git
+      params:
+        depth: 5
+      trigger: false
+    - get: base-image
+      #params:
+      #  skip_download: true
+      trigger: true
+  - task: put-fabric-ver
+    image: base-image
+    config:
+      platform: linux
+      outputs:
+      - name: fabric-on-image
+      run:
+        path: sh
+        args:
+        - -c
+        - |
+          apk update
+          apk add py-pip py-cffi openssl python-dev gcc make musl-dev libffi-dev openssl-dev
+          pip install fabric
+          fab -V | awk '/^Fabric/ { print $2 }' > fabric-on-image/ver
+          cat fabric-on-image/ver
+  - put: docker-reg
+    params:
+      build: src-git
+      tag: fabric-on-image/ver
+      tag_as_latest: true
+    get_params:
+      skip_download: true
+- name: test-img
+  plan:
+  - get: docker-reg
+    trigger: true
+  - task: echo-fabric-ver
+    image: docker-reg
+    config:
+      platform: linux
+      run:
+        path: sh
+        args:
+        - -c
+        - |
+          fab -V

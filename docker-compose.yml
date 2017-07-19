@@ -1,0 +1,11 @@
+---
+version: '2'
+services:
+  docker-image:
+    restart: 'no'
+    build:
+      context: ./
+      #args:
+      #  _VER: ${_VER}
+    image: ${DOCKER_ID}/${NAME}:${TAG}
+    #command: /bin/sh
