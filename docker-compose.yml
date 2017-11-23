@@ -1,11 +1,12 @@
 ---
 version: '2'
 services:
-  docker-image:
+  this-image:
     restart: 'no'
     build:
       context: ./
       #args:
       #  _VER: ${_VER}
     image: ${DOCKER_ID}/${NAME}:${TAG}
-    #command: /bin/sh
+    # for test
+    command: /bin/sh -c 'while true; do echo dummy; sleep 600; done'
