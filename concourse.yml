@@ -1,6 +1,6 @@
 ---
 # Concourse pipeline: fabric-image
-#   $ fly -t target sp -p fabric-image -c concourse.yml -l fly-vars.yml -l ~/sec/credentials-prod.yml
+#   $ fly -t $CC_TARGET sp -p fabric-image -c concourse.yml -l fly-vars.yml -l ~/sec/credentials-prod.yml
 resources:
 - name: src-git
   type: git
@@ -53,6 +53,7 @@ jobs:
         - |
           apk update
           apk add py-pip py-cffi openssl python-dev gcc make musl-dev libffi-dev openssl-dev
+          pip install --upgrade pip
           pip install fabric
           fab -V | awk '/^Fabric/ { print $2 }' > fabric-on-image/ver
           cat fabric-on-image/ver
